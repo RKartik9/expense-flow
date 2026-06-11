@@ -90,35 +90,6 @@ src/
   proxy.ts           Clerk route protection
 ```
 
-## Cron jobs
-
-Defined in `vercel.json`, authenticated with `Authorization: Bearer $CRON_SECRET`:
-
-| Endpoint | Schedule | Job |
-| --- | --- | --- |
-| `/api/cron/recurring` | daily 01:00 | Create expenses from recurring rules |
-| `/api/cron/reminders` | daily 09:00 | Pending payment reminders |
-| `/api/cron/subscriptions` | daily 09:30 | Subscription renewal reminders |
-| `/api/cron/weekly-summary` | Mon 10:00 | Weekly spending summary email |
-| `/api/cron/monthly-report` | 1st 10:00 | Monthly report email |
-
-## Deploying to Vercel
-
-1. Push to GitHub, import the repo into Vercel.
-2. Add every variable from `.env.example` in project settings. Set `NEXT_PUBLIC_APP_URL` to the production URL and use a strong `CRON_SECRET`.
-3. Cron jobs are registered automatically from `vercel.json`.
-4. Point the Clerk webhook at the production domain.
-
-## Admin access
-
-Set `role: "admin"` on a user document in MongoDB:
-
-```js
-db.users.updateOne({ email: "you@example.com" }, { $set: { role: "admin" } })
-```
-
-The admin panel is at `/admin`.
-
 ## License
 
 MIT
