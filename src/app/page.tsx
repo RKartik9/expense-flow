@@ -148,7 +148,7 @@ export default async function LandingPage() {
       </main>
 
       <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-        ExpenseFlow — built with Next.js, MongoDB, Clerk, and Resend.
+        ExpenseFlow — Built for managing your money.
       </footer>
     </div>
   );
