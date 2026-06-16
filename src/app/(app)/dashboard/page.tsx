@@ -100,35 +100,35 @@ async function Charts({ user }: { user: UserDoc }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Expense Trend</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <TrendChart data={trend} currency={currency} />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Monthly Comparison</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <MonthlyComparisonChart data={monthly} currency={currency} />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Category Distribution</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <CategoryPie data={categories} currency={currency} />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Spending Heatmap</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <SpendingHeatmap data={heatmap} currency={currency} />
         </CardContent>
       </Card>

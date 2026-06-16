@@ -17,14 +17,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar isAdmin={isAdmin} />
       <div className="flex min-h-screen flex-col lg:pl-60">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur sm:px-6">
-          <CommandPalette />
-          <div className="flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            <CommandPalette />
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
             <NotificationBell initialCount={unreadCount} />
             <ThemeToggle />
             <UserButton />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 p-4 pb-24 sm:p-6 lg:pb-6">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 overflow-x-clip p-4 pb-24 sm:p-6 lg:pb-6">
+          {children}
+        </main>
       </div>
       <MobileNav isAdmin={isAdmin} />
     </div>
