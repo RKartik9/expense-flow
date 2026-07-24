@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import {
-  TrendingDown,
-  TrendingUp,
-  PiggyBank,
-  CalendarClock,
-  Split,
-  Wallet,
-} from "lucide-react";
+import { format } from "date-fns";
+import { CalendarDays } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import {
   getOverviewStats,
@@ -16,77 +10,19 @@ import {
   getCategoryDistribution,
   getHeatmapData,
 } from "@/lib/dashboard";
-import { formatCurrency } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendChart, MonthlyComparisonChart, CategoryPie } from "@/components/dashboard/charts";
 import { SpendingHeatmap } from "@/components/dashboard/heatmap";
+import { OverviewCards } from "@/components/dashboard/overview-cards";
 import type { UserDoc } from "@/lib/models/user";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-async function OverviewCards({ user }: { user: UserDoc }) {
+async function OverviewSection({ user }: { user: UserDoc }) {
   const stats = await getOverviewStats(user._id);
-  const currency = user.currency;
-
-  const cards = [
-    {
-      title: "Total Expenses",
-      value: formatCurrency(stats.totalExpenses, currency),
-      icon: TrendingDown,
-      hint: "All time",
-    },
-    {
-      title: "Total Income",
-      value: formatCurrency(stats.totalIncome, currency),
-      icon: TrendingUp,
-      hint: "All time",
-    },
-    {
-      title: "Monthly Spending",
-      value: formatCurrency(stats.monthlySpending, currency),
-      icon: Wallet,
-      hint: "This month",
-    },
-    {
-      title: "Monthly Savings",
-      value: formatCurrency(stats.monthlySavings, currency),
-      icon: PiggyBank,
-      hint: "Income minus spending",
-    },
-    {
-      title: "Pending Splits",
-      value: formatCurrency(stats.pendingSplitsOwedToMe, currency),
-      icon: Split,
-      hint: `You owe ${formatCurrency(stats.pendingSplitsIOwe, currency)}`,
-    },
-    {
-      title: "Upcoming Payments",
-      value: formatCurrency(stats.upcomingPaymentsAmount, currency),
-      icon: CalendarClock,
-      hint: `${stats.upcomingPaymentsCount} due in 7 days`,
-    },
-  ];
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {card.title}
-            </CardTitle>
-            <card.icon className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold tabular-nums">{card.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{card.hint}</p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+  return <OverviewCards stats={stats} currency={user.currency} />;
 }
 
 async function Charts({ user }: { user: UserDoc }) {
@@ -141,18 +77,25 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={`Hi, ${user.name.split(" ")[0]}`} description="Here's your money at a glance." />
+      <PageHeader title={`Hi, ${user.name.split(" ")[0]}`} description="Here's your money at a glance.">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground/5 px-3 py-1.5 text-xs font-medium text-muted-foreground ring-1 ring-foreground/10">
+          <CalendarDays className="size-3.5" />
+          {format(new Date(), "MMMM yyyy")}
+        </span>
+      </PageHeader>
       <div className="space-y-4">
         <Suspense
           fallback={
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
+            <div className="grid grid-cols-2 gap-4 lg:auto-rows-fr lg:grid-cols-4">
+              <Skeleton className="col-span-2 h-48 rounded-xl lg:row-span-2 lg:h-full" />
+              {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-32 rounded-xl" />
               ))}
+              <Skeleton className="col-span-2 h-20 rounded-xl lg:col-span-4" />
             </div>
           }
         >
-          <OverviewCards user={user} />
+          <OverviewSection user={user} />
         </Suspense>
         <Suspense
           fallback={

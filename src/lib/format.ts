@@ -13,6 +13,11 @@ export function formatCurrency(amount: number, currency: string = "INR") {
   }
 }
 
+export function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "Cash",
   upi: "UPI",

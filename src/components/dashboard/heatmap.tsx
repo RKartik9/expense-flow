@@ -42,7 +42,12 @@ export function SpendingHeatmap({ data, currency }: { data: HeatmapDay[]; curren
                 day ? (
                   <Tooltip key={day.date}>
                     <TooltipTrigger asChild>
-                      <div className={`size-3.5 rounded-[3px] ${intensity(day.amount, max)}`} />
+                      <div
+                        className={`size-3.5 rounded-[3px] ring-foreground/40 transition-all duration-150 hover:scale-125 hover:ring-2 ${intensity(
+                          day.amount,
+                          max
+                        )}`}
+                      />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
                       {format(new Date(day.date), "dd MMM")}:{" "}

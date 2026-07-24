@@ -11,20 +11,67 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
+  type PieSectorDataItem,
 } from "recharts";
 import { formatCurrency } from "@/lib/format";
 import type { TrendPoint, MonthlyComparisonPoint, CategorySlice } from "@/lib/dashboard";
 
-const tooltipStyle = {
-  backgroundColor: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: "8px",
-  color: "var(--popover-foreground)",
-  fontSize: "12px",
-};
+interface TooltipItem {
+  dataKey?: string | number;
+  name?: string | number;
+  value?: number | string;
+  color?: string;
+  payload?: { color?: string; fill?: string };
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  currency,
+  labelMap,
+}: {
+  active?: boolean;
+  payload?: TooltipItem[];
+  label?: string | number;
+  currency: string;
+  labelMap?: Record<string, string>;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+      {label != null && (
+        <p className="mb-1.5 font-medium text-popover-foreground">{label}</p>
+      )}
+      <div className="space-y-1">
+        {payload.map((entry, i) => {
+          const swatch = entry.color ?? entry.payload?.color ?? entry.payload?.fill;
+          const key = String(entry.dataKey ?? "");
+          return (
+            <div key={i} className="flex items-center gap-2">
+              {swatch && (
+                <span
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{ backgroundColor: swatch }}
+                />
+              )}
+              <span className="text-muted-foreground">
+                {labelMap?.[key] ?? String(entry.name ?? "")}
+              </span>
+              <span className="ml-auto pl-3 font-medium tabular-nums text-popover-foreground">
+                {formatCurrency(Number(entry.value), currency)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function TrendChart({ data, currency }: { data: TrendPoint[]; currency: string }) {
   return (
@@ -47,8 +94,8 @@ export function TrendChart({ data, currency }: { data: TrendPoint[]; currency: s
         />
         <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={50} />
         <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={(value) => [formatCurrency(Number(value), currency), "Spent"]}
+          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+          content={<ChartTooltip currency={currency} labelMap={{ amount: "Spent" }} />}
         />
         <Area
           type="monotone"
@@ -56,6 +103,12 @@ export function TrendChart({ data, currency }: { data: TrendPoint[]; currency: s
           stroke="var(--primary)"
           strokeWidth={2}
           fill="url(#trendFill)"
+          activeDot={{
+            r: 4,
+            stroke: "var(--background)",
+            strokeWidth: 2,
+            fill: "var(--primary)",
+          }}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -76,18 +129,35 @@ export function MonthlyComparisonChart({
         <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={50} />
         <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={(value, name) => [
-            formatCurrency(Number(value), currency),
-            name === "expenses" ? "Expenses" : "Income",
-          ]}
+          cursor={{ fill: "var(--foreground)", fillOpacity: 0.05 }}
+          content={
+            <ChartTooltip
+              currency={currency}
+              labelMap={{ expenses: "Expenses", income: "Income" }}
+            />
+          }
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
+        <Bar
+          dataKey="expenses"
+          name="Expenses"
+          fill="var(--foreground)"
+          radius={[4, 4, 0, 0]}
+        />
+        <Bar
+          dataKey="income"
+          name="Income"
+          fill="var(--muted-foreground)"
+          radius={[4, 4, 0, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
+}
+
+function renderActiveSlice(props: PieSectorDataItem) {
+  const { outerRadius = 0 } = props;
+  return <Sector {...props} outerRadius={outerRadius + 6} />;
 }
 
 export function CategoryPie({ data, currency }: { data: CategorySlice[]; currency: string }) {
@@ -98,28 +168,39 @@ export function CategoryPie({ data, currency }: { data: CategorySlice[]; currenc
       </div>
     );
   }
+
+  const total = data.reduce((sum, slice) => sum + slice.value, 0);
+
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="value"
-          nameKey="name"
-          innerRadius={55}
-          outerRadius={90}
-          paddingAngle={2}
-          strokeWidth={0}
-        >
-          {data.map((slice) => (
-            <Cell key={slice.name} fill={slice.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={(value, name) => [formatCurrency(Number(value), currency), String(name)]}
-        />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="relative">
+      <ResponsiveContainer width="100%" height={260}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={55}
+            outerRadius={90}
+            paddingAngle={2}
+            strokeWidth={0}
+            activeShape={renderActiveSlice}
+          >
+            {data.map((slice) => (
+              <Cell key={slice.name} fill={slice.color} />
+            ))}
+          </Pie>
+          <Tooltip content={<ChartTooltip currency={currency} />} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="pointer-events-none absolute inset-x-0 top-[110px] flex -translate-y-1/2 flex-col items-center">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          This month
+        </span>
+        <span className="text-lg font-bold tabular-nums">
+          {formatCurrency(total, currency)}
+        </span>
+      </div>
+    </div>
   );
 }

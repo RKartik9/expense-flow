@@ -21,10 +21,13 @@ export interface OverviewStats {
   totalIncome: number;
   monthlySpending: number;
   monthlySavings: number;
+  prevMonthSpending: number;
+  prevMonthSavings: number;
   pendingSplitsOwedToMe: number;
   pendingSplitsIOwe: number;
   upcomingPaymentsCount: number;
   upcomingPaymentsAmount: number;
+  spark: number[];
 }
 
 async function sumExpenses(userId: Types.ObjectId, type: "expense" | "income", from?: Date, to?: Date) {
@@ -43,13 +46,27 @@ export async function getOverviewStats(userId: Types.ObjectId): Promise<Overview
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
+  const prevMonth = subMonths(now, 1);
+  const prevMonthStart = startOfMonth(prevMonth);
+  const prevMonthEnd = endOfMonth(prevMonth);
   const weekAhead = addDays(now, 7);
 
-  const [totalExpenses, totalIncome, monthlySpending, monthlyIncome] = await Promise.all([
+  const [
+    totalExpenses,
+    totalIncome,
+    monthlySpending,
+    monthlyIncome,
+    prevMonthSpending,
+    prevMonthIncome,
+    spark,
+  ] = await Promise.all([
     sumExpenses(userId, "expense"),
     sumExpenses(userId, "income"),
     sumExpenses(userId, "expense", monthStart, monthEnd),
     sumExpenses(userId, "income", monthStart, monthEnd),
+    sumExpenses(userId, "expense", prevMonthStart, prevMonthEnd),
+    sumExpenses(userId, "income", prevMonthStart, prevMonthEnd),
+    getDailySpendSeries(userId, 14),
   ]);
 
   // Splits where I'm the payer: outstanding amounts others owe me
@@ -94,12 +111,32 @@ export async function getOverviewStats(userId: Types.ObjectId): Promise<Overview
     totalIncome,
     monthlySpending,
     monthlySavings: monthlyIncome - monthlySpending,
+    prevMonthSpending,
+    prevMonthSavings: prevMonthIncome - prevMonthSpending,
     pendingSplitsOwedToMe: owedToMeAgg[0]?.total ?? 0,
     pendingSplitsIOwe: iOweAgg[0]?.total ?? 0,
     upcomingPaymentsCount: recurring.length + subscriptions.length,
     upcomingPaymentsAmount:
       recurring.reduce((s, r) => s + r.amount, 0) + subscriptions.reduce((s, x) => s + x.amount, 0),
+    spark,
   };
+}
+
+async function getDailySpendSeries(userId: Types.ObjectId, days: number): Promise<number[]> {
+  const from = startOfDay(subDays(new Date(), days - 1));
+  const rows = await Expense.aggregate([
+    { $match: { userId, type: "expense", deletedAt: null, date: { $gte: from } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+        amount: { $sum: "$amount" },
+      },
+    },
+  ]);
+  const byDay = new Map(rows.map((r) => [r._id, r.amount]));
+  return eachDayOfInterval({ start: from, end: new Date() }).map(
+    (d) => byDay.get(format(d, "yyyy-MM-dd")) ?? 0
+  );
 }
 
 export interface TrendPoint {
